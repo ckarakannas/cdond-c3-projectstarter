@@ -43,7 +43,9 @@ jobs:
       - run:
           name: Build front-end
           command: |
-            npm --prefix frontend/ run build
+            cd frontend/
+            npm i
+            npm run build
       - save_cache:
           paths: [frontend/node_modules]
           key: frontend-build
@@ -58,7 +60,9 @@ jobs:
       - run:
           name: Back-end build
           command: |
-            npm --prefix backend/ run build
+            cd backend/
+            npm i
+            npm run build
       - save_cache:
           paths: [backend/node_modules]
           key: backend-build
