@@ -134,8 +134,9 @@ jobs:
             npm audit --audit-level=critical
 
   deploy-infrastructure:
+    # Using custom aws-cli image that supports tar utility
     docker:
-      - image: amazon/aws-cli
+      - image: mikesir87/aws-cli
     steps:
       - checkout
       - run:
