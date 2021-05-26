@@ -12,7 +12,7 @@ Parameters:
 
 Resources:
   InstanceSecurityGroup:
-    Type: AWS::EC2::SecurityGroupss
+    Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub UdaPeople-${ID}
       GroupDescription: Allow port 22 and port 3030.
@@ -37,3 +37,11 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub backend-${ID}
+Outputs:
+  BackendUrl:
+    Description: Backend Public URL
+    Value: !Sub
+      - http://${BACKEND_URL}
+      - { BACKEND_URL: !GetAtt EC2Instance.PublicDnsName }
+    Export:
+      Name: !Sub ${ID}-BACKEND-URL

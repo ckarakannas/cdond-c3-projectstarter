@@ -1,6 +1,6 @@
 ---
 
-- name: "configuration play." 
+- name: "Configure servers playbook" 
   hosts: web
   user: ubuntu
   gather_facts: false
@@ -8,13 +8,41 @@
     - ansible_python_interpreter: /usr/bin/python3
     - ansible_host_key_checking: false
     - ansible_stdout_callback: yaml
-
+  environment:
+    ENVIRONMENT: production
+    TYPEORM_CONNECTION: postgres
+    TYPEORM_ENTITIES: ./src/modules/domain/**/*.entity.ts
+    TYPEORM_HOST: udapeople-prod-1ybhbn1dkvhl4rm.ciupwjrkq1ie.eu-west-2.rds.amazonaws.com
+    TYPEORM_PORT: 5432
+    TYPEORM_USERNAME: postgres
+    TYPEORM_PASSWORD: udapeopletest
+    TYPEORM_DATABASE: udapeople-prod-1ybhbn1dkvhl4rm
   pre_tasks:
-    - name: "wait 600 seconds for target connection to become reachable/usable."
-      # Your code here
+    - name: "Wait 300 seconds for target connection to become reachable/usable."
+      wait_for:
+        timeout: 300
 
-    - name: "install python for Ansible."
-      # Your code here
+    - name: "Update packages."
+      become: yes
+      apt:
+        update_cache: yes
 
+    - name: "Upgrade packages"
+      become: yes
+      apt:
+        upgrade: yes
+
+    - name: Autoremove dependencies
+      become: yes
+      apt:
+        autoremove: yes
+
+    - name: "Install Python for Ansible."
+      become: yes
+      apt:
+        update_cache: yes
+        pkg:
+          - python3.8
+          - python3-pip
   roles:
-    # Your code here
+    - configure-server

@@ -161,29 +161,31 @@ jobs:
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --output text >> .circleci/ansible/inventory.txt
       - persist_to_workspace:
-          root: ~/
+          root: ~/project/.circleci
           paths:
-            - project/.circleci/ansible/inventory.txt
+            - ansible/inventory.txt
+            - ansible
       # Here's where you will add some code to rollback on failure
 
-#   configure-infrastructure:
-#     docker:
-#       # Docker image here that supports Ansible
-#     steps:
-#       # Checkout code from git
-#       # Add ssh keys with fingerprint
-#       # attach workspace
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # Your code here
-#             exit 1
-#       - run:
-#           name: Configure server
-#           command: |
-#             # Your code here
-#             exit 1
-#       # Here's where you will add some code to rollback on failure
+  configure-infrastructure:
+    docker:
+      - image: python:3.8-alpine
+    steps:
+      - checkout
+      - add_ssh_keys:
+          fingerprints:
+            - "56:1f:40:a9:88:18:e6:ac:e6:92:52:44:c2:bd:90:95"
+      - attach_workspace:
+          at: ~/project/.circleci
+      - run:
+          name: Install dependencies
+          command: |
+            python -m pip install --user ansible
+      - run:
+          name: Configure server with Ansible Playbook
+          command: |
+            ansible-playbook -i inventory.txt configure-server.yml
+      # Here's where you will add some code to rollback on failure
 
 #   run-migrations:
 #     docker:
@@ -315,8 +317,8 @@ workflows:
           filters:
             branches:
               only: [master]
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
       # - run-migrations:
       #     requires: [configure-infrastructure]
       # - deploy-frontend:
