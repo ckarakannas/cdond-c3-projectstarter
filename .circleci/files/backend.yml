@@ -9,6 +9,9 @@ Parameters:
     Description: AMI Id for Ubuntu Server 18.04 LTS (eu-west-2)
     Type: AWS::EC2::Image::Id
     Default: ami-09a56048b08f94cdf
+  EC2PubKey:
+    Description: EC2 instance public key
+    Type: String
 
 Resources:
   InstanceSecurityGroup:
@@ -34,6 +37,19 @@ Resources:
         - Ref: InstanceSecurityGroup
       KeyName: udacity
       ImageId: !Ref UbuntuAMI
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-config
+          cloud_final_modules:
+          - [users-groups,always]
+          users:
+            - name: ansible
+            groups: [ wheel ]
+            sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
+            shell: /bin/bash
+            ssh-authorized-keys: 
+            - ${EC2PubKey}
+
       Tags:
         - Key: Name
           Value: !Sub backend-${ID}

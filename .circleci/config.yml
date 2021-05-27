@@ -1,17 +1,19 @@
 version: 2.1
 
-# commands:
-#   destroy-environment:
-#     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-#     parameters:
-#       # Add parameter here
-#     steps:
-#       - run:
-#           name: Destroy environments
-#           when: on_fail
-#           command: |
-#             # Your code here
-#             exit 1
+commands:
+  destroy-environment:
+    description: Destroy cloudformation stack given a stack prefix and workflow ID.
+    parameters:
+      stackprefix:
+        default: "udapeople-frontend"
+        type: string
+    steps:
+      - run:
+          name: Destroy environments
+          when: on_fail
+          command: |
+            aws cloudformation delete-stack \
+              --stack-name "<<parameters.stackprefix>>-${CIRCLE_WORKFLOW_ID}"
 
 #   revert-migrations:
 #     description: Revert the last migration if successfully run in the current workflow.
@@ -134,11 +136,20 @@ jobs:
             npm audit --audit-level=critical
 
   deploy-infrastructure:
-    # Using custom aws-cli image that supports tar utility
     docker:
+      # Using custom aws-cli image that supports tar utility
       - image: mikesir87/aws-cli
     steps:
       - checkout
+      - run:
+          name: Install curl
+          command: |
+            apt update -y
+            apt install curl -y
+      - run:
+          name: Get public key from Memstash and export to variable
+          command: |
+            export EC2_PUB_KEY=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/${MEMSTASH_KEY})
       - run:
           name: Deploy backend infrastructure
           command: |
@@ -146,7 +157,7 @@ jobs:
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople-project \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" \ EC2PubKey="${EC2_PUB_KEY}"
       - run:
           name: Deploy frontend infrastructure
           command: |
@@ -166,6 +177,12 @@ jobs:
           paths:
             - ansible/inventory.txt
             - ansible
+      - destroy-environment
+          when: on_fail
+          stackprefix: udapeople-backend
+      - destroy-environment
+          when: on_fail
+          stackprefix: udapeople-frontend
       # Here's where you will add some code to rollback on failure
 
   configure-infrastructure:
@@ -179,13 +196,19 @@ jobs:
       - attach_workspace:
           at: ~/project/.circleci
       - run:
-          name: Install dependencies
+          name: Install Ansible
           command: |
-            python -m pip install --user ansible
+            apk -U add ansible
       - run:
           name: Configure server with Ansible Playbook
           command: |
             ansible-playbook -i inventory.txt configure-server.yml
+      - destroy-environment
+          when: on_fail
+          stackprefix: udapeople-backend
+      - destroy-environment
+          when: on_fail
+          stackprefix: udapeople-frontend
       # Here's where you will add some code to rollback on failure
 
 #   run-migrations:
@@ -318,8 +341,8 @@ workflows:
           filters:
             branches:
               only: [master]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
+      # - configure-infrastructure:
+      #     requires: [deploy-infrastructure]
       # - run-migrations:
       #     requires: [configure-infrastructure]
       # - deploy-frontend:
