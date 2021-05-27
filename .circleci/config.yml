@@ -149,7 +149,8 @@ jobs:
       - run:
           name: Get public key from Memstash and export to variable
           command: |
-            export EC2_PUB_KEY=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/${MEMSTASH_KEY})
+            EC2_PUB_KEY=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/${MEMSTASH_KEY})
+            echo "export EC2_PUB_KEY" >> $BASH_ENV
       - run:
           name: Deploy backend infrastructure
           command: |
