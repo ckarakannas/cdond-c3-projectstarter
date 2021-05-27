@@ -177,10 +177,10 @@ jobs:
           paths:
             - ansible/inventory.txt
             - ansible
-      - destroy-environment
+      - destroy-environment:
           when: on_fail
           stackprefix: udapeople-backend
-      - destroy-environment
+      - destroy-environment:
           when: on_fail
           stackprefix: udapeople-frontend
       # Here's where you will add some code to rollback on failure
@@ -203,10 +203,10 @@ jobs:
           name: Configure server with Ansible Playbook
           command: |
             ansible-playbook -i inventory.txt configure-server.yml
-      - destroy-environment
+      - destroy-environment:
           when: on_fail
           stackprefix: udapeople-backend
-      - destroy-environment
+      - destroy-environment:
           when: on_fail
           stackprefix: udapeople-frontend
       # Here's where you will add some code to rollback on failure
