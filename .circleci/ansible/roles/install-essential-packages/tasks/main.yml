@@ -1,0 +1,20 @@
+---
+- name: Update packages.
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Upgrade packages
+  become: yes
+  apt:
+    upgrade: yes
+
+- name: Autoremove dependencies
+  become: yes
+  apt:
+    autoremove: yes
+
+- name: Install essential build tools
+  become: yes
+  apt:
+    name: build-essential

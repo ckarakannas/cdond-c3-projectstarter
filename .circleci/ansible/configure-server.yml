@@ -2,7 +2,7 @@
 
 - name: "Configure servers playbook" 
   hosts: web
-  user: ubuntu
+  user: ansible-user
   gather_facts: false
   vars:
     - ansible_python_interpreter: /usr/bin/python3
@@ -21,28 +21,6 @@
     - name: "Wait 300 seconds for target connection to become reachable/usable."
       wait_for:
         timeout: 300
-
-    - name: "Update packages."
-      become: yes
-      apt:
-        update_cache: yes
-
-    - name: "Upgrade packages"
-      become: yes
-      apt:
-        upgrade: yes
-
-    - name: Autoremove dependencies
-      become: yes
-      apt:
-        autoremove: yes
-
-    - name: "Install Python for Ansible."
-      become: yes
-      apt:
-        update_cache: yes
-        pkg:
-          - python3.8
-          - python3-pip
   roles:
-    - configure-server
+    - install-essential-packages
+    - configure-nodejs

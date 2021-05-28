@@ -43,7 +43,7 @@ Resources:
           cloud_final_modules:
           - [users-groups,always]
           users:
-            - name: ansible
+          - name: ansible-user
             groups: [ wheel ]
             sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
             shell: /bin/bash

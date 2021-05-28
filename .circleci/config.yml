@@ -142,25 +142,13 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install curl
-          command: |
-            apt update -y
-            apt install curl -y
-      # - run:
-      #     name: Get public key from Memstash and export to variable
-      #     command: |
-      #       EC2_PUB_KEY=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/${MEMSTASH_KEY})
-      #       echo "export EC2_PUB_KEY" >> $BASH_ENV
-      - run:
           name: Deploy backend infrastructure
           command: |
-            EC2_PUB_KEY=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/${MEMSTASH_KEY})
-            
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople-project \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" EC2PubKey="${EC2_PUB_KEY}"
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" EC2PubKey="${UDACITY_PUB_KEY}"
       - run:
           name: Deploy frontend infrastructure
           command: |
@@ -184,7 +172,6 @@ jobs:
           stackprefix: udapeople-backend
       - destroy-environment:
           stackprefix: udapeople-frontend
-      # Here's where you will add some code to rollback on failure
 
   configure-infrastructure:
     docker:
@@ -340,8 +327,8 @@ workflows:
           filters:
             branches:
               only: [master]
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
       # - run-migrations:
       #     requires: [configure-infrastructure]
       # - deploy-frontend:
