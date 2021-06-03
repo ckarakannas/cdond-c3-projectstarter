@@ -5,10 +5,10 @@
   args:
     chdir: ~
 
-- name: Install NodeJS
+- name: Install NodeJs
   become: yes
   apt:
-    nodejs
+    name: nodejs
 
 - name: Install PM2
   become: yes
