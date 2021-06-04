@@ -241,8 +241,8 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt-get update
-            apt-get install awscli -y
+            sudo apt-get update
+            sudo apt-get install awscli -y
       - run:
           name: Get backend url and make it available to env
           command: |
