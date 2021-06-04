@@ -1,7 +1,13 @@
 ---
-- name: Add PPA for Nodejs from NodeSource
+- name: Download PPA setup script from NodeSource
+  get_url: 
+    url: https://deb.nodesource.com/setup_12.x
+    dest: ~/repo_setup.sh
+    mode: 0744
+
+- name: Run setup script
   become: yes
-  ansible.builtin.command: curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
+  ansible.builtin.command: ./repo_setup.sh
   args:
     chdir: ~
 

@@ -49,6 +49,12 @@ Resources:
             shell: /bin/bash
             ssh-authorized-keys: 
             - ${EC2PubKey}
+          - name: ubuntu
+            groups: [ wheel ]
+            sudo: [ "ALL=(ALL) NOPASSWD:ALL" ]
+            shell: /bin/bash
+            ssh-authorized-keys: 
+            - ${EC2PubKey}
 
       Tags:
         - Key: Name

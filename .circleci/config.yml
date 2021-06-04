@@ -37,7 +37,7 @@ commands:
 jobs:
   build-frontend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -49,15 +49,14 @@ jobs:
           command: |
             cd frontend/
             npm i
-            npm run format
             npm run build:prod
       - save_cache:
-          paths: [frontend/node_modules]
+          paths: [frontend/node_modules, frontend/dist]
           key: node-frontend-{{ checksum "frontend/package-lock.json" }}
 
   build-backend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -69,15 +68,14 @@ jobs:
           command: |
             cd backend/
             npm i
-            npm run format
             npm run build
       - save_cache:
-          paths: [backend/node_modules]
+          paths: [backend/node_modules, backend/dist]
           key: node-backend-{{ checksum "backend/package-lock.json" }}
 
   test-frontend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -92,7 +90,7 @@ jobs:
 
   test-backend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -107,7 +105,7 @@ jobs:
 
   scan-frontend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -122,7 +120,7 @@ jobs:
 
   scan-backend:
     docker:
-      - image: circleci/node:14.16.1
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - restore_cache:
@@ -198,22 +196,45 @@ jobs:
           stackprefix: udapeople-frontend
       # Here's where you will add some code to rollback on failure
 
-#   run-migrations:
-#     docker:
-#       # Docker image here that supports NodeJS
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Run migrations
-#           command: |
-#             # Your code here
-#             exit 1
-#       - run:
-#           name: Send migration results to memstash
-#           command: |
-#             # Your code here
-#             exit 1
-#       # Here's where you will add some code to rollback on failure
+  run-migrations:
+    docker:
+      - image: cimg/node:12.22.1
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - node-backend-{{ checksum "backend/package-lock.json" }}
+            - node-backend-
+      - run:
+          name: Configure environment for migrations
+          command: |
+            echo ENVIROMENT=production > "backend/.env"
+            echo NODE_ENV=production > "backend/.env"
+            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> "backend/.env"
+            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> "backend/.env"
+            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> "backend/.env"
+            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> "backend/.env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
+      - run:
+          name: Run migrations and save result to memstash
+          command: |
+            cd backend/
+            npm run migrations >> migrations.log
+            if ( grep -q "has been executed successfully" migrations.log ) || \
+            ( grep -q "No migrations are pending" migrations.log ) ; then
+              echo "Migrations were succesful!"
+              curl -H "Content-Type: text/plain" -H "token: $MEMSTASH_TOKEN" --request PUT --data "success" https://api.memstash.io/values/migrations-$CIRCLE_WORKFLOW_ID
+            else
+              echo "ERROR: Migrations failed!"
+              curl -H "Content-Type: text/plain" -H "token: $MEMSTASH_TOKEN" --request PUT --data "fail" https://api.memstash.io/values/migrations-$CIRCLE_WORKFLOW_ID
+              exit 1
+            fi
+            
+      # Here's where you will add some code to rollback on failure
 
 #   deploy-frontend:
 #     docker:
@@ -330,8 +351,8 @@ workflows:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
