@@ -227,7 +227,7 @@ jobs:
               curl -H "Content-Type: text/plain" -H "token: $MEMSTASH_TOKEN" --request PUT --data "fail" https://api.memstash.io/values/migrations-$CIRCLE_WORKFLOW_ID
               exit 1
             fi
-        - revert-migrations
+      - revert-migrations
 
   deploy-frontend:
     docker:
