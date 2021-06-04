@@ -248,8 +248,8 @@ jobs:
           command: |
             BACKEND_IP=$(aws cloudformation describe-stacks \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
-              --query 'Stacks[0].Outputs[0].OutputValue') \
-              --output text
+              --query 'Stacks[0].Outputs[0].OutputValue' \
+              --output text)
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
             echo "API_URL=$API_URL" > frontend/.env

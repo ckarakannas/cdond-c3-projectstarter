@@ -11,7 +11,7 @@
   pre_tasks:
     - name: "Wait for target connection to become reachable/usable."
       wait_for:
-        timeout: 200
+        timeout: 120
   roles:
     - install-essentials
     - configure-nodejs
