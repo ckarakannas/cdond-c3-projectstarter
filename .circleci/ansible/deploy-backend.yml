@@ -1,8 +1,8 @@
 ---
 
-- name: "configuration play." 
+- name: "Deploy backend play." 
   hosts: web
-  user: ubuntu
+  user: ansible-user
   gather_facts: false
   vars:
     - ansible_python_interpreter: /usr/bin/python3

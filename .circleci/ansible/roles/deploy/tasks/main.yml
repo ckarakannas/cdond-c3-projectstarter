@@ -1,0 +1,24 @@
+- name: Copy backend dist files
+  ansible.builtin.copy:
+    src: ../../backend/dist
+    dest: ~/
+    owner: ansible-user
+    mode: '0444'
+- name: Copy package.json
+  ansible.builtin.copy:
+    src: ../../backend/package.json
+    dest: ~/package.json
+    owner: ansible-user
+    mode: '0444'
+- name: Copy package-lock.json
+  ansible.builtin.copy:
+    src: ../../backend/package-lock.json
+    dest: ~/package-lock.json
+    owner: ansible-user
+    mode: '0444'
+
+# copy is slow -- try sync instead 
+#  - name: Synchronization of src on the control machine to dest on the remote hosts
+#   ansible.posix.synchronize:
+#     src: some/relative/path
+#     dest: /some/absolute/path
