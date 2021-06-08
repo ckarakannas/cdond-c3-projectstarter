@@ -289,7 +289,6 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            cd ~/project/.circleci/ansible/
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
       - destroy-environment
 
@@ -338,21 +337,29 @@ jobs:
       - revert-migrations
       - destroy-environment
 
-#   cloudfront-update:
-#     docker:
-#       # Docker image here that supports AWS CLI
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Update cloudfront distribution
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure
-
+  cloudfront-update:
+    docker:
+      - image: cimg/node:12.22.1
+    steps:
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install awscli -y
+      - restore_cache:
+          keys:
+            - node-backend-{{ checksum "backend/package-lock.json" }}
+            - node-backend-
+      - run:
+          name: Update cloudfront distribution
+          command: |
+             aws cloudformation deploy \
+              --template-file cloudfront.yml \
+              --stack-name udapeople-cloudfront \
+              --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID} \
+              --tags project=udapeople-project
+      - revert-migrations
+      - destroy-environment
 # cleanup:
 #   docker:
 #     # Docker image here

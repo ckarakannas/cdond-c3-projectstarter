@@ -8,19 +8,19 @@
     group: wheel
 - name: Sync dist folder from local machine to dest
   ansible.posix.synchronize:
-    src: ../../../../backend/dist/
+    src: ~/project/backend/dist/
     dest: /app/dist/
 - name: Sync node_modules folder from local machine to dest
   ansible.posix.synchronize:
-    src: ../../../../backend/node_modules/
+    src: ~/project/backend/node_modules/
     dest: /app/node_modules/
 - name: Copy package.json
   ansible.builtin.copy:
-    src: ../../../../backend/package.json
+    src: ~/project/backend/package.json
     dest: /app/package.json
     mode: '0644'
 - name: Copy package-lock.json
   ansible.builtin.copy:
-    src: ../../../../backend/package-lock.json
+    src: ~/project/backend/package-lock.json
     dest: /app/package-lock.json
     mode: '0644'
