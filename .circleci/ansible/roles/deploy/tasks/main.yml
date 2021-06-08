@@ -1,24 +1,26 @@
-- name: Copy backend dist files
-  ansible.builtin.copy:
-    src: ../../backend/dist
-    dest: ~/
+- name: Create app directory for backend
+  become: yes
+  file:
+    path: /app
+    state: directory
+    recurse: yes
     owner: ansible-user
-    mode: '0444'
+    group: wheel
+- name: Sync dist folder from local machine to dest
+  ansible.posix.synchronize:
+    src: ../../../../backend/dist/
+    dest: /app/dist/
+- name: Sync node_modules folder from local machine to dest
+  ansible.posix.synchronize:
+    src: ../../../../backend/node_modules/
+    dest: /app/node_modules/
 - name: Copy package.json
   ansible.builtin.copy:
-    src: ../../backend/package.json
-    dest: ~/package.json
-    owner: ansible-user
-    mode: '0444'
+    src: ../../../../backend/package.json
+    dest: /app/package.json
+    mode: '0644'
 - name: Copy package-lock.json
   ansible.builtin.copy:
-    src: ../../backend/package-lock.json
-    dest: ~/package-lock.json
-    owner: ansible-user
-    mode: '0444'
-
-# copy is slow -- try sync instead 
-#  - name: Synchronization of src on the control machine to dest on the remote hosts
-#   ansible.posix.synchronize:
-#     src: some/relative/path
-#     dest: /some/absolute/path
+    src: ../../../../backend/package-lock.json
+    dest: /app/package-lock.json
+    mode: '0644'

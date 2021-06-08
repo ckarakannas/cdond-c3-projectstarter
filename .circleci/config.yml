@@ -12,6 +12,7 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
+            # NEED TO CLEANUP S3 bucket first or force delete
             aws cloudformation delete-stack \
               --stack-name "<<parameters.stackprefix>>-${CIRCLE_WORKFLOW_ID}"
 
@@ -176,19 +177,18 @@ jobs:
       - attach_workspace:
           at: ~/project/.circleci
       - run:
-          name: Install Ansible
+          name: Install Ansible and AWS CLI
           command: |
             apk -U add ansible
+            pip install awscli
       - run:
           name: Configure server with Ansible Playbook
           command: |
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/configure-server.yml
-      ## THE BELOW WILL FAIL, NEED TO USE AWS-CLI IMAGE FOR DESTROYING ENVS BY DEFAULT
       - destroy-environment:
           stackprefix: udapeople-backend
       - destroy-environment:
           stackprefix: udapeople-frontend
-      # Here's where you will add some code to rollback on failure
 
   run-migrations:
     docker:
@@ -250,14 +250,14 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
               --query 'Stacks[0].Outputs[0].OutputValue' \
               --output text)
-            export API_URL="http://${BACKEND_IP}:3030"
+            export API_URL="${BACKEND_IP}:3030"
             echo "${API_URL}"
             echo "API_URL=$API_URL" > frontend/.env
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend/
-            npm run build
+            npm run build:prod
             cd dist/
             aws s3 cp . s3://udapeople-${CIRCLE_WORKFLOW_ID} --recursive
       - destroy-environment:
@@ -276,8 +276,9 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk -U add ansible tar gzip
+            apk -U add ansible tar gzip rsync
             pip install awscli
+            ansible-galaxy collection install ansible.posix
       - attach_workspace:
           at: ~/project/.circleci
       - restore_cache:
@@ -292,28 +293,46 @@ jobs:
           stackprefix: udapeople-backend
       - destroy-environment:
           stackprefix: udapeople-frontend
-#   smoke-test:
-#     docker:
-#       # Lightweight Docker image
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Get backend url
-#           command: |
-#             # your code here
-#       - run:
-#           name: Backend smoke test.
-#           command: |
-#             # your code here
-#       - run:
-#           name: Frontend smoke test.
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure
+
+  smoke-test:
+    docker:
+      - image: alpine
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apk -U add curl
+            pip install awscli
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=$(aws cloudformation describe-stacks \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
+              --query 'Stacks[0].Outputs[0].OutputValue' \
+              --output text)
+            cat $BACKEND_IP > ~/project/backend-url.txt
+      - run:
+          name: Backend smoke test.
+          command: |
+            BACKEND_URL=$( cat ~/project/backend-url.txt )
+            if curl -s ${BACKEND_URL}:3030/api/status"
+            then
+              return 0
+            else
+              return 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            FRONTEND-URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-eu-west-2.amazonaws.com"
+            if curl -s ${FRONTEND-URL} | grep "Welcome"
+            then
+              return 0
+            else
+              return 1
+            fi
+      # Here's where you will add some code to rollback on failure
 
 #   cloudfront-update:
 #     docker:
