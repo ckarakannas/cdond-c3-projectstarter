@@ -271,21 +271,21 @@ jobs:
       - image: python:3.8-alpine
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - "56:1f:40:a9:88:18:e6:ac:e6:92:52:44:c2:bd:90:95"
-      - run:
-          name: Install dependencies
-          command: |
-            apk -U add ansible tar gzip openssh rsync 
-            pip install awscli
-            ansible-galaxy collection install ansible.posix
       - attach_workspace:
           at: ~/project/.circleci
       - restore_cache:
           keys:
             - node-backend-{{ checksum "backend/package-lock.json" }}
             - node-backend-
+      - run:
+          name: Install dependencies
+          command: |
+            apk -U add ansible openssh rsync 
+            pip install awscli
+            ansible-galaxy collection install ansible.posix
+      - add_ssh_keys:
+          fingerprints:
+            - "56:1f:40:a9:88:18:e6:ac:e6:92:52:44:c2:bd:90:95"
       - run:
           name: Deploy backend
           command: |
