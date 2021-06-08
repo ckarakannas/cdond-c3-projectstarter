@@ -2,19 +2,23 @@ version: 2.1
 
 commands:
   destroy-environment:
-    description: Destroy cloudformation stack given a stack prefix and workflow ID.
-    parameters:
-      stackprefix:
-        default: "udapeople-frontend"
-        type: string
+    description: Destroy AWS infrastructure for rollback
     steps:
       - run:
-          name: Destroy environments
+          name: Clean up frontend S3 bucket
           when: on_fail
           command: |
-            # NEED TO CLEANUP S3 bucket first or force delete
+            echo "Cleaning up S3 frontend bucket..."
+            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID} --recursive
+      - run:
+          name: Destroy CloudFormation stacks
+          when: on_fail
+          command: |
+            echo "Cleaning up CloudFormation stacks..."
             aws cloudformation delete-stack \
-              --stack-name "<<parameters.stackprefix>>-${CIRCLE_WORKFLOW_ID}"
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}"
+            aws cloudformation delete-stack \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}"
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
@@ -161,10 +165,7 @@ jobs:
           paths:
             - ansible/inventory.txt
             - ansible
-      - destroy-environment:
-          stackprefix: udapeople-backend
-      - destroy-environment:
-          stackprefix: udapeople-frontend
+      - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -185,10 +186,7 @@ jobs:
           name: Configure server with Ansible Playbook
           command: |
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/configure-server.yml
-      - destroy-environment:
-          stackprefix: udapeople-backend
-      - destroy-environment:
-          stackprefix: udapeople-frontend
+      - destroy-environment
 
   run-migrations:
     docker:
@@ -199,6 +197,11 @@ jobs:
           keys:
             - node-backend-{{ checksum "backend/package-lock.json" }}
             - node-backend-
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install awscli -y
       - run:
           name: Configure environment for migrations
           command: |
@@ -228,6 +231,7 @@ jobs:
               exit 1
             fi
       - revert-migrations
+      - destroy-environment
 
   deploy-frontend:
     docker:
@@ -260,10 +264,7 @@ jobs:
             npm run build:prod
             cd dist/
             aws s3 cp . s3://udapeople-${CIRCLE_WORKFLOW_ID} --recursive
-      - destroy-environment:
-          stackprefix: udapeople-backend
-      - destroy-environment:
-          stackprefix: udapeople-frontend
+      - destroy-environment
 
   deploy-backend:
     docker:
@@ -276,7 +277,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk -U add ansible tar gzip rsync
+            apk -U add ansible tar gzip openssh rsync 
             pip install awscli
             ansible-galaxy collection install ansible.posix
       - attach_workspace:
@@ -288,22 +289,24 @@ jobs:
       - run:
           name: Deploy backend
           command: |
+            cd ~/project/.circleci/ansible/
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
-      - destroy-environment:
-          stackprefix: udapeople-backend
-      - destroy-environment:
-          stackprefix: udapeople-frontend
+      - destroy-environment
 
   smoke-test:
     docker:
-      - image: alpine
+      - image: cimg/node:12.22.1
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            apk -U add curl
-            pip install awscli
+            sudo apt-get update
+            sudo apt-get install awscli -y
+      - restore_cache:
+          keys:
+            - node-backend-{{ checksum "backend/package-lock.json" }}
+            - node-backend-
       - run:
           name: Get backend url
           command: |
@@ -332,7 +335,8 @@ jobs:
             else
               return 1
             fi
-      # Here's where you will add some code to rollback on failure
+      - revert-migrations
+      - destroy-environment
 
 #   cloudfront-update:
 #     docker:
