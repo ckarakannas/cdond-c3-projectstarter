@@ -7,10 +7,6 @@
     recurse: yes
     owner: ansible-user
     group: wheel
-- name: Install openssh on localhost
-  become: yes
-  ansible.builtin.command: apk add openssh
-  delegate_to: 127.0.0.1
 - name: Sync dist folder from local machine to dest
   ansible.posix.synchronize:
     src: ~/project/backend/dist/

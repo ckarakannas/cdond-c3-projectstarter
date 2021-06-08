@@ -268,18 +268,12 @@ jobs:
 
   deploy-backend:
     docker:
-      - image: python:3.8-alpine
+      - image: cimg/python:3.8.10
     steps:
       - checkout
       - add_ssh_keys:
           fingerprints:
             - "56:1f:40:a9:88:18:e6:ac:e6:92:52:44:c2:bd:90:95"
-      - run:
-          name: Install dependencies
-          command: |
-            apk -U add ansible tar rsync
-            pip install awscli
-            ansible-galaxy collection install ansible.posix
       - attach_workspace:
           at: ~/project/.circleci
       - restore_cache:
@@ -287,10 +281,16 @@ jobs:
             - node-backend-{{ checksum "backend/package-lock.json" }}
             - node-backend-
       - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            pip3 install awscli --upgrade --user
+            pip3 install ansible --upgrade --user
+            ansible-galaxy collection install ansible.posix
+            sudo apt install rsync
+      - run:
           name: Deploy backend
           command: |
-            echo [defaults] > ~/.ansible.cfg
-            echo "host_key_checking = False" >> ~/.ansible.cfg
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/deploy-backend.yml
       - destroy-environment
 
