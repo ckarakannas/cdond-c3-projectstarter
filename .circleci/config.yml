@@ -326,9 +326,10 @@ jobs:
           command: |
             if curl -s ${BACKEND_URL}:3030/api/status | grep "status":"ok"
             then
-              return 0
+              echo "Backend is live!"
             else
-              return 1
+              echo "ERROR: Backend is down! Exiting..."
+              exit 1
             fi
       - run:
           name: Frontend smoke test.
@@ -336,9 +337,10 @@ jobs:
             FRONTEND-URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-eu-west-2.amazonaws.com"
             if curl -s ${FRONTEND-URL} | grep "Welcome"
             then
-              return 0
+              echo "Frontend is live!"
             else
-              return 1
+              echo "ERROR: Frontend is down! Exiting..."
+              exit 1
             fi
       - revert-migrations
       - destroy-environment
