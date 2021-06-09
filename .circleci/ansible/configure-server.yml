@@ -15,3 +15,4 @@
   roles:
     - install-essentials
     - configure-nodejs
+    - configure-prometheus-node-exporter
