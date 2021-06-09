@@ -19,7 +19,6 @@
   args:
     chdir: /app
 - name: Start app
-  become: true
   ansible.builtin.command: pm2 start npm --name "udapeople-backend" -- start
   args:
     chdir: /app
