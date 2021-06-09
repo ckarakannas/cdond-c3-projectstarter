@@ -291,7 +291,8 @@ jobs:
           name: Archive files for deployment
           command: |
             cd ~/project/backend/
-            tar -czvf backend-deployment.tar.gz ./
+            touch backend-deployment.tar.gz
+            tar --exclude=backend-deployment.tar.gz -czvf backend-deployment.tar.gz ./
       - run:
           name: Deploy backend
           command: |
