@@ -314,17 +314,16 @@ jobs:
             - node-backend-{{ checksum "backend/package-lock.json" }}
             - node-backend-
       - run:
-          name: Get backend url
+          name: Get backend url and export it for smoke test
           command: |
-            BACKEND_IP=$(aws cloudformation describe-stacks \
+            export BACKEND_URL=$(aws cloudformation describe-stacks \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
               --query 'Stacks[0].Outputs[0].OutputValue' \
               --output text)
-            echo $BACKEND_IP > ~/project/backend-url.txt
+            echo $BACKEND_URL
       - run:
           name: Backend smoke test.
           command: |
-            BACKEND_URL=$( cat ~/project/backend-url.txt )
             if curl -s ${BACKEND_URL}:3030/api/status" | grep "status":"ok"
             then
               return 0
@@ -346,45 +345,41 @@ jobs:
 
   cloudfront-update:
     docker:
-      - image: cimg/node:12.22.1
+      - image: amazon/aws-cli
     steps:
+      - checkout
       - run:
-          name: Install dependencies
+          name: Get old stack workflow id
           command: |
-            sudo apt-get update
-            sudo apt-get install awscli -y
-      - restore_cache:
-          keys:
-            - node-backend-{{ checksum "backend/package-lock.json" }}
-            - node-backend-
+            export OldWorkflowID=$(aws cloudformation list-exports \
+            --query "Exports[?Name==\`WorkflowID\`].Value" \
+            --no-paginate --output text)
       - run:
           name: Update cloudfront distribution
           command: |
              aws cloudformation deploy \
-              --template-file cloudfront.yml \
+              --template-file .circleci/files/cloudfront.yml \
               --stack-name udapeople-cloudfront \
               --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID} \
               --tags project=udapeople-project
-      - revert-migrations
+      - run:
+          name: Get stacks
+          command: |
+            export STACKS=$(aws cloudformation list-stacks \
+            --query "StackSummaries[*].StackName" \
+            --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
+      - run:
+          name: Remove old stacks and files
+          command: |
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              aws s3 rm s3://udapeople-${OldWorkflowID} --recursive
+              aws cloudformation delete-stack \
+                --stack-name "udapeople-frontend-${OldWorkflowID}"
+              aws cloudformation delete-stack \
+                --stack-name "udapeople-backend-${OldWorkflowID}"
+            fi
       - destroy-environment
-# cleanup:
-#   docker:
-#     # Docker image here
-#   steps:
-#     # Checkout code from git
-#     - run:
-#         name: Get old stack workflow id
-#         command: |
-#           # your code here
-#           export OldWorkflowID="the id here"
-#           export STACKS=[] #put the list of stacks here
-#     - run:
-#         name: Remove old stacks and files
-#         command: |
-#           if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
-#           then
-#             # your code here
-#           fi
 
 workflows:
   default:
@@ -414,7 +409,5 @@ workflows:
           requires: [run-migrations]
       - smoke-test:
           requires: [deploy-backend, deploy-frontend]
-      # - cloudfront-update:
-      #     requires: [smoke-test]
-      # - cleanup:
-      #     requires: [cloudfront-update]
+      - cloudfront-update:
+          requires: [smoke-test]
