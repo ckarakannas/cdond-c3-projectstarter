@@ -336,6 +336,7 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
+            echo $BACKEND_URL
             BACKEND_URL=$( cat ~/project/backend_url.txt )
             if curl -s ${BACKEND_URL}:3030/api/status | grep ok
             then
@@ -344,8 +345,8 @@ jobs:
               echo "ERROR: Backend is down! Exiting..."
               exit 1
             fi
-      - revert-migrations
-      - destroy-environment
+      # - revert-migrations
+      # - destroy-environment
 
   cloudfront-update:
     docker:
