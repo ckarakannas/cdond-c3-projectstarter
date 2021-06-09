@@ -7,21 +7,18 @@
     recurse: yes
     owner: ansible-user
     group: wheel
-- name: Sync dist folder from local machine to dest
-  ansible.posix.synchronize:
-    src: ~/project/backend/dist/
-    dest: /app/dist/
-- name: Sync node_modules folder from local machine to dest
-  ansible.posix.synchronize:
-    src: ~/project/backend/node_modules/
-    dest: /app/node_modules/
-- name: Copy package.json
-  ansible.builtin.copy:
-    src: ~/project/backend/package.json
-    dest: /app/package.json
-    mode: '0644'
-- name: Copy package-lock.json
-  ansible.builtin.copy:
-    src: ~/project/backend/package-lock.json
-    dest: /app/package-lock.json
-    mode: '0644'
+- name: "Unarchive backend deployment files to server"
+  become: true
+  unarchive:
+    src: ~/project/backend/backend-deployment.tar.gz
+    dest: /app
+    owner: ansible-user
+    group: wheel
+- name: "Run npm install"
+  ansible.builtin.command: npm i
+  args:
+    chdir: /app
+- name: Start app
+  ansible.builtin.command: pm2 start npm --name "udapeople-backend" -- start
+  args:
+    chdir: /app
