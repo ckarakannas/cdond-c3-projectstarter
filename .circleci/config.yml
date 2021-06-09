@@ -323,17 +323,6 @@ jobs:
               --output text)
             echo $BACKEND_URL > ~/project/backend_url.txt
       - run:
-          name: Backend smoke test.
-          command: |
-            BACKEND_URL=$( cat ~/project/backend_url.txt )
-            if curl -s ${BACKEND_URL}:3030/api/status | grep "ok"
-            then
-              echo "Backend is live!"
-            else
-              echo "ERROR: Backend is down! Exiting..."
-              exit 1
-            fi
-      - run:
           name: Frontend smoke test.
           command: |
             FRONTEND-URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-eu-west-2.amazonaws.com"
@@ -342,6 +331,17 @@ jobs:
               echo "Frontend is live!"
             else
               echo "ERROR: Frontend is down! Exiting..."
+              exit 1
+            fi
+      - run:
+          name: Backend smoke test.
+          command: |
+            BACKEND_URL=$( cat ~/project/backend_url.txt )
+            if curl -s ${BACKEND_URL}:3030/api/status | grep ok
+            then
+              echo "Backend is live!"
+            else
+              echo "ERROR: Backend is down! Exiting..."
               exit 1
             fi
       - revert-migrations
@@ -398,38 +398,38 @@ workflows:
       #     requires: [build-backend]
       # - scan-frontend:
       #     requires: [build-frontend]
-      # - deploy-infrastructure:
-      #     # requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-      #     filters:
-      #       branches:
-      #         only: [master]
-      # - configure-infrastructure:
-      #     requires: [deploy-infrastructure]
-      #     filters:
-      #       branches:
-      #         only: [master]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
-      #     filters:
-      #       branches:
-      #         only: [master]
-      # - deploy-frontend:
-      #     requires: [run-migrations]
-      #     filters:
-      #       branches:
-      #         only: [master]
-      # - deploy-backend:
-      #     requires: [run-migrations]
-      #     filters:
-      #       branches:
-      #         only: [master]
-      - smoke-test:
-          # requires: [deploy-backend, deploy-frontend]
+      - deploy-infrastructure:
+          # requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
               only: [master]
-      # - cloudfront-update:
-      #     requires: [smoke-test]
-      #     filters:
-      #       branches:
-      #         only: [master]
+      - configure-infrastructure:
+          requires: [deploy-infrastructure]
+          filters:
+            branches:
+              only: [master]
+      - run-migrations:
+          requires: [configure-infrastructure]
+          filters:
+            branches:
+              only: [master]
+      - deploy-frontend:
+          requires: [run-migrations]
+          filters:
+            branches:
+              only: [master]
+      - deploy-backend:
+          requires: [run-migrations]
+          filters:
+            branches:
+              only: [master]
+      - smoke-test:
+          requires: [deploy-backend, deploy-frontend]
+          filters:
+            branches:
+              only: [master]
+      - cloudfront-update:
+          requires: [smoke-test]
+          filters:
+            branches:
+              only: [master]
