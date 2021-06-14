@@ -39,7 +39,7 @@ commands:
           name: Configure dotenv for backend
           command: |
             echo ENVIROMENT=production > "backend/.env"
-            echo NODE_ENV=production > "backend/.env"
+            echo NODE_ENV=production >> "backend/.env"
             echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> "backend/.env"
             echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> "backend/.env"
             echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> "backend/.env"
@@ -160,7 +160,7 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --tags project=udapeople-project \
+              --tags project=udapeople-project workflow=${CIRCLE_WORKFLOW_ID} \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}" EC2PubKey="${UDACITY_PUB_KEY}"
       - run:
@@ -168,14 +168,14 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --tags project=udapeople-project \
+              --tags project=udapeople-project workflow=${CIRCLE_WORKFLOW_ID} \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID}"
       - run:
           name: Append backend EC2 ip to Ansible inventory
           command: |
             aws ec2 describe-instances \
-              --filter "Name=tag-value,Values=udapeople-project" \
+              --filter "Name=tag-value,Values=${CIRCLE_WORKFLOW_ID}" \
               --query 'Reservations[*].Instances[*].PublicIpAddress' \
               --output text >> .circleci/ansible/inventory.txt
       - persist_to_workspace:
@@ -345,8 +345,8 @@ jobs:
               echo "ERROR: Backend is down! Exiting..."
               exit 1
             fi
-      # - revert-migrations
-      # - destroy-environment
+      - revert-migrations
+      - destroy-environment
 
   cloudfront-update:
     docker:
@@ -364,7 +364,7 @@ jobs:
               --template-file .circleci/files/cloudfront.yml \
               --stack-name udapeople-cloudfront \
               --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID} \
-              --tags project=udapeople
+              --tags project=udapeople workflow=${CIRCLE_WORKFLOW_ID}
             export STACKS=$(aws cloudformation list-stacks \
             --query "StackSummaries[*].StackName" \
             --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
@@ -376,23 +376,23 @@ jobs:
               aws cloudformation delete-stack \
                 --stack-name "udapeople-backend-${OldWorkflowID}"
             fi
-      # - destroy-environment
+      - destroy-environment
 
 workflows:
   default:
     jobs:
       - build-frontend
       - build-backend
-      # - test-frontend:
-      #     requires: [build-frontend]
-      # - test-backend:
-      #     requires: [build-backend]
-      # - scan-backend:
-      #     requires: [build-backend]
-      # - scan-frontend:
-      #     requires: [build-frontend]
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
       - deploy-infrastructure:
-          # requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
           filters:
             branches:
               only: [master]
